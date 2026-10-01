@@ -1,0 +1,6 @@
+{
+  "name": "HackBridge",
+  "description": "Campus innovation and hackathon platform featuring decentralized faculty distribution and AI Idea Reviews to help students learn and improve from every submission.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
