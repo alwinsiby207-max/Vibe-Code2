@@ -154,6 +154,15 @@ export const RoleAuthModal: React.FC<RoleAuthModalProps> = ({
       onConfirm('organizer', idInput.trim());
       return;
     }
+
+    if (effectiveRole === 'judge') {
+      if (!idInput.trim()) {
+        setErrorMsg('Please enter your Judge ID to continue.');
+        return;
+      }
+      onConfirm('judge', idInput.trim());
+      return;
+    }
   };
 
   const handleQuickFill = (code: string) => {
@@ -294,7 +303,7 @@ export const RoleAuthModal: React.FC<RoleAuthModalProps> = ({
                     <div>
                       <span className="text-xs font-bold text-[#1d1b16] block">Organizer ⚙️</span>
                       <span className="text-[11px] text-[#71594f]">
-                        Screen submissions & manage selected teams (Organizer ID required)
+                        Host hackathons & screen student applications (Organizer ID required)
                       </span>
                     </div>
                   </div>
@@ -304,16 +313,50 @@ export const RoleAuthModal: React.FC<RoleAuthModalProps> = ({
                     </span>
                   )}
                 </div>
+
+                {/* Judge Option */}
+                <div
+                  onClick={() => {
+                    setSelectedRole('judge');
+                    setErrorMsg('');
+                  }}
+                  className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex items-center justify-between ${
+                    selectedRole === 'judge'
+                      ? 'bg-[#fff9ef] border-[#8b5a2b] ring-1 ring-[#8b5a2b]/30 shadow-2xs'
+                      : 'bg-[#ffffff] border-[#d5c3b6]/50 hover:bg-[#fdfbf7]'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-lg bg-[#8b5a2b] text-white flex items-center justify-center font-bold shrink-0">
+                      <span className="material-symbols-outlined text-[18px]">gavel</span>
+                    </span>
+                    <div>
+                      <span className="text-xs font-bold text-[#1d1b16] block">Judge ⚖️</span>
+                      <span className="text-[11px] text-[#71594f]">
+                        Score rubrics, run Edge AI analysis & evaluate projects (Judge ID required)
+                      </span>
+                    </div>
+                  </div>
+                  {selectedRole === 'judge' && (
+                    <span className="material-symbols-outlined text-[#8b5a2b] text-[18px]">
+                      check_circle
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           )}
 
-          {/* ID Input Form for Faculty or Organizer */}
-          {(effectiveRole === 'faculty' || effectiveRole === 'organizer') && (
+          {/* ID Input Form for Faculty, Organizer, or Judge */}
+          {(effectiveRole === 'faculty' || effectiveRole === 'organizer' || effectiveRole === 'judge') && (
             <form onSubmit={handleSubmit} className="space-y-2.5 pt-1 no-drag">
               <div>
                 <label className="text-xs font-bold text-[#1d1b16] block mb-1">
-                  {effectiveRole === 'organizer' ? 'Enter Organizer ID' : 'Enter Faculty ID'}
+                  {effectiveRole === 'organizer'
+                    ? 'Enter Organizer ID'
+                    : effectiveRole === 'judge'
+                    ? 'Enter Judge ID'
+                    : 'Enter Faculty ID'}
                 </label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#837469]">
@@ -329,6 +372,8 @@ export const RoleAuthModal: React.FC<RoleAuthModalProps> = ({
                     placeholder={
                       effectiveRole === 'organizer'
                         ? 'e.g. ORG-2026 or ORG-ASIET'
+                        : effectiveRole === 'judge'
+                        ? 'e.g. JDG-2026 or JUDGE-CAMPUS'
                         : 'e.g. FAC-4012 or FAC-ASIET'
                     }
                     autoFocus
@@ -346,20 +391,40 @@ export const RoleAuthModal: React.FC<RoleAuthModalProps> = ({
                 <button
                   type="button"
                   onClick={() =>
-                    handleQuickFill(effectiveRole === 'organizer' ? 'ORG-2026' : 'FAC-ASIET')
+                    handleQuickFill(
+                      effectiveRole === 'organizer'
+                        ? 'ORG-2026'
+                        : effectiveRole === 'judge'
+                        ? 'JDG-2026'
+                        : 'FAC-ASIET'
+                    )
                   }
                   className="px-2 py-0.5 rounded-md bg-[#f3ede4] hover:bg-[#ede7de] text-[#1d1b16] text-[10px] font-mono cursor-pointer transition-colors"
                 >
-                  {effectiveRole === 'organizer' ? 'ORG-2026' : 'FAC-ASIET'}
+                  {effectiveRole === 'organizer'
+                    ? 'ORG-2026'
+                    : effectiveRole === 'judge'
+                    ? 'JDG-2026'
+                    : 'FAC-ASIET'}
                 </button>
                 <button
                   type="button"
                   onClick={() =>
-                    handleQuickFill(effectiveRole === 'organizer' ? 'ORG-HACK' : 'FAC-2024')
+                    handleQuickFill(
+                      effectiveRole === 'organizer'
+                        ? 'ORG-HACK'
+                        : effectiveRole === 'judge'
+                        ? 'JDG-AI'
+                        : 'FAC-2024'
+                    )
                   }
                   className="px-2 py-0.5 rounded-md bg-[#f3ede4] hover:bg-[#ede7de] text-[#1d1b16] text-[10px] font-mono cursor-pointer transition-colors"
                 >
-                  {effectiveRole === 'organizer' ? 'ORG-HACK' : 'FAC-2024'}
+                  {effectiveRole === 'organizer'
+                    ? 'ORG-HACK'
+                    : effectiveRole === 'judge'
+                    ? 'JDG-AI'
+                    : 'FAC-2024'}
                 </button>
               </div>
             </form>
@@ -384,6 +449,8 @@ export const RoleAuthModal: React.FC<RoleAuthModalProps> = ({
             className={`py-2.5 px-5 rounded-xl text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex-1 flex items-center justify-center gap-1.5 ${
               effectiveRole === 'organizer'
                 ? 'bg-[#6f4315] hover:bg-[#5a3610]'
+                : effectiveRole === 'judge'
+                ? 'bg-[#8b5a2b] hover:bg-[#70451f]'
                 : effectiveRole === 'faculty'
                 ? 'bg-[#8b5a2b] hover:bg-[#70451f]'
                 : 'bg-[#1d1b16] hover:bg-[#30251F]'
@@ -393,8 +460,20 @@ export const RoleAuthModal: React.FC<RoleAuthModalProps> = ({
               {mode === 'initial_welcome'
                 ? effectiveRole === 'student'
                   ? 'Enter as Student →'
-                  : `Authenticate as ${effectiveRole === 'organizer' ? 'Organizer' : 'Faculty'} →`
-                : `Verify & Switch to ${effectiveRole === 'organizer' ? 'Organizer' : 'Faculty'} →`}
+                  : `Authenticate as ${
+                      effectiveRole === 'organizer'
+                        ? 'Organizer'
+                        : effectiveRole === 'judge'
+                        ? 'Judge'
+                        : 'Faculty'
+                    } →`
+                : `Verify & Switch to ${
+                    effectiveRole === 'organizer'
+                      ? 'Organizer'
+                      : effectiveRole === 'judge'
+                      ? 'Judge'
+                      : 'Faculty'
+                  } →`}
             </span>
           </button>
         </div>

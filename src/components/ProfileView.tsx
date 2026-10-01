@@ -10,6 +10,7 @@ interface ProfileViewProps {
   onOpenHostModal: () => void;
   onOpenFacultyPortal: () => void;
   onOpenStudentDashboard?: () => void;
+  onOpenJudgePortal?: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -20,6 +21,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onOpenHostModal,
   onOpenFacultyPortal,
   onOpenStudentDashboard,
+  onOpenJudgePortal,
 }) => {
   return (
     <div className="flex flex-col w-full pb-24 max-w-md md:max-w-2xl lg:max-w-3xl mx-auto px-4 pt-4 space-y-5">
@@ -34,16 +36,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-full bg-[#6f4315] text-[#fff9ef] flex items-center justify-center font-bold text-xl shadow-xs">
-            AS
+            AJ
           </div>
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-[#1d1b16]">Alwin Siby</h2>
-              <span className="px-2 py-0.5 rounded-full bg-[#fcdcce] text-[#775f54] text-[10px] font-bold">
-                Student Builder
+              <h2 className="text-xl font-bold text-[#1d1b16]">Alex Jordan</h2>
+              <span className="px-2 py-0.5 rounded-full bg-[#fcdcce] text-[#775f54] text-[10px] font-bold capitalize">
+                {activeRole} Mode
               </span>
             </div>
-            <p className="text-xs text-[#51443a]">alwinsiby207@gmail.com</p>
+            <p className="text-xs text-[#51443a]">alex.jordan@campus.edu</p>
             <p className="text-xs text-[#71594f]">
               Adi Shankara Institute of Engineering & Technology (ASIET)
             </p>
@@ -55,7 +57,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <span className="text-[11px] font-bold uppercase tracking-wider text-[#71594f] block">
             Switch Active Persona / Role
           </span>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <button
               onClick={() => onToggleRole('student')}
               className={`py-2 px-2 rounded-lg text-xs font-bold transition-all ${
@@ -67,16 +69,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               Student
             </button>
             <button
-              onClick={() => onToggleRole('faculty')}
-              className={`py-2 px-2 rounded-lg text-xs font-bold transition-all ${
-                activeRole === 'faculty'
-                  ? 'bg-[#8b5a2b] text-white shadow-xs'
-                  : 'bg-[#ffffff] text-[#51443a] hover:bg-[#f3ede4]'
-              }`}
-            >
-              Faculty 🎓
-            </button>
-            <button
               onClick={() => onToggleRole('organizer')}
               className={`py-2 px-2 rounded-lg text-xs font-bold transition-all ${
                 activeRole === 'organizer'
@@ -85,6 +77,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               }`}
             >
               Organizer ⚙️
+            </button>
+            <button
+              onClick={() => onToggleRole('judge')}
+              className={`py-2 px-2 rounded-lg text-xs font-bold transition-all ${
+                activeRole === 'judge'
+                  ? 'bg-[#8b5a2b] text-white shadow-xs'
+                  : 'bg-[#ffffff] text-[#51443a] hover:bg-[#f3ede4]'
+              }`}
+            >
+              Judge ⚖️
+            </button>
+            <button
+              onClick={() => onToggleRole('faculty')}
+              className={`py-2 px-2 rounded-lg text-xs font-bold transition-all ${
+                activeRole === 'faculty'
+                  ? 'bg-[#8b5a2b] text-white shadow-xs'
+                  : 'bg-[#ffffff] text-[#51443a] hover:bg-[#f3ede4]'
+              }`}
+            >
+              Faculty 🎓
             </button>
           </div>
         </div>

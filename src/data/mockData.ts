@@ -524,7 +524,7 @@ export const SMART_CANTEEN_FEEDBACK: IdeaFeedback = {
   id: 'fb-canteen-001',
   submissionId: 'sub-001',
   ideaTitle: 'Smart College Canteen',
-  leadName: 'Alwin Siby',
+  leadName: 'Alex Jordan',
   teamName: 'Team Nova',
   hackathonTitle: 'AI Innovation Challenge',
   summary:
@@ -640,8 +640,8 @@ export const INITIAL_SUBMISSIONS: IdeaSubmission[] = [
     hackathonId: 'ai-innovation-challenge',
     hackathonTitle: 'AI Innovation Challenge',
     teamName: 'Team Nova',
-    leadName: 'Alwin Siby',
-    leadEmail: 'alwinsiby207@gmail.com',
+    leadName: 'Alex Jordan',
+    leadEmail: 'alex.jordan@campus.edu',
     ideaTitle: 'Smart College Canteen',
     summary:
       'A queue-reduction and pre-ordering mobile web application for the college cafeteria utilizing student ID authentication and pickup token prediction.',

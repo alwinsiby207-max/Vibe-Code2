@@ -4,7 +4,7 @@ import {
   INITIAL_SUBMISSIONS,
   INITIAL_NOTIFICATIONS,
 } from './data/mockData';
-import { Hackathon, IdeaSubmission, Role, NotificationItem } from './types';
+import { Hackathon, IdeaSubmission, IdeaFeedback, Role, NotificationItem } from './types';
 import { generateStructuredIdeaReview } from './utils/aiReviewGenerator';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
@@ -22,6 +22,9 @@ import { HowItWorksModal } from './components/HowItWorksModal';
 import { HostHackathonModal } from './components/HostHackathonModal';
 import { StudentDashboardModal } from './components/StudentDashboardModal';
 import { RoleAuthModal } from './components/RoleAuthModal';
+import { JudgeModal } from './components/JudgeModal';
+import { SupabaseService } from './lib/supabaseService';
+import { supabase } from './lib/supabase';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<string>('explore');
@@ -40,9 +43,44 @@ export default function App() {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isFacultyShareOpen, setIsFacultyShareOpen] = useState(false);
   const [isOrganizerOpen, setIsOrganizerOpen] = useState(false);
+  const [isJudgeOpen, setIsJudgeOpen] = useState(false);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
   const [isHostOpen, setIsHostOpen] = useState(false);
   const [isStudentDashboardOpen, setIsStudentDashboardOpen] = useState(false);
+  const [supabaseConnected, setSupabaseConnected] = useState<boolean>(true);
+
+  // Fetch initial data from Supabase
+  React.useEffect(() => {
+    let isMounted = true;
+    async function initSupabase() {
+      try {
+        const [hacks, subs, notifs] = await Promise.all([
+          SupabaseService.getHackathons(),
+          SupabaseService.getSubmissions(),
+          SupabaseService.getNotifications(),
+        ]);
+        if (!isMounted) return;
+        if (hacks && hacks.length > 0) {
+          setHackathons(hacks);
+          setSelectedHackathon(hacks[0]);
+        }
+        if (subs && subs.length > 0) {
+          setSubmissions(subs);
+          setActiveSubmission(subs[0]);
+        }
+        if (notifs && notifs.length > 0) {
+          setNotifications(notifs);
+        }
+        setSupabaseConnected(true);
+      } catch (e) {
+        console.warn('Supabase initialization notice:', e);
+      }
+    }
+    initSupabase();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Unread alerts count
   const unreadAlertsCount = notifications.filter((n) => !n.isRead).length;
@@ -72,6 +110,7 @@ export default function App() {
       setActiveRole('student');
       setIsOrganizerOpen(false);
       setIsFacultyShareOpen(false);
+      setIsJudgeOpen(false);
       return;
     }
 
@@ -85,7 +124,17 @@ export default function App() {
       return;
     }
 
-    // 3. Moving to Faculty mode: requires Faculty ID
+    // 3. Moving to Judge mode: requires Judge ID
+    if (requestedRole === 'judge') {
+      if (activeRole === 'judge') {
+        setIsJudgeOpen(true);
+        return;
+      }
+      setSwitchAuthTarget('judge');
+      return;
+    }
+
+    // 4. Moving to Faculty mode: requires Faculty ID
     if (requestedRole === 'faculty') {
       if (activeRole === 'faculty') {
         setIsFacultyShareOpen(true);
@@ -96,8 +145,8 @@ export default function App() {
     }
   };
 
-  // Student registers a team and submits an idea
-  const handleAddSubmission = (newSub: Omit<IdeaSubmission, 'id' | 'submittedAt'>) => {
+  // Student registers a team and submits an idea (persisted to Supabase)
+  const handleAddSubmission = async (newSub: Omit<IdeaSubmission, 'id' | 'submittedAt'>) => {
     const id = `sub-${Date.now()}`;
     const submissionRecord: IdeaSubmission = {
       ...newSub,
@@ -107,6 +156,17 @@ export default function App() {
 
     setSubmissions((prev) => [submissionRecord, ...prev]);
     setActiveSubmission(submissionRecord);
+
+    // Save to Supabase
+    try {
+      const persisted = await SupabaseService.createSubmission(newSub);
+      if (persisted.id && persisted.id !== id) {
+        setSubmissions((prev) => prev.map((s) => (s.id === id ? persisted : s)));
+        setActiveSubmission(persisted);
+      }
+    } catch (e) {
+      console.warn('Supabase submission save caught:', e);
+    }
 
     // Add confirmation notification
     setNotifications((prev) => [
@@ -131,32 +191,7 @@ export default function App() {
     let feedback = targetSub?.feedback;
 
     if (status === 'not_selected' && !feedback && targetSub) {
-      try {
-        const res = await fetch('/api/analyze-idea', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ideaTitle: targetSub.ideaTitle,
-            problemStatement: targetSub.problemStatement,
-            solution: targetSub.solution,
-            techStack: targetSub.techStack,
-            targetUsers: targetSub.targetUsers,
-            expectedImpact: targetSub.expectedImpact,
-            hackathonTitle: targetSub.hackathonTitle,
-            leadName: targetSub.leadName,
-            teamName: targetSub.teamName,
-            submissionId: targetSub.id,
-          }),
-        });
-
-        if (res.ok) {
-          feedback = await res.json();
-        } else {
-          feedback = generateStructuredIdeaReview(targetSub, targetSub.hackathonTitle);
-        }
-      } catch {
-        feedback = generateStructuredIdeaReview(targetSub, targetSub.hackathonTitle);
-      }
+      feedback = await SupabaseService.runProjectAnalysis(targetSub);
     }
 
     setSubmissions((prev) =>
@@ -193,6 +228,45 @@ export default function App() {
     }
   };
 
+  // Judge submits project evaluation with score and feedback
+  const handleJudgeEvaluation = async (
+    projectId: string,
+    score: number,
+    comments: string,
+    decision: 'selected' | 'not_selected',
+    feedback?: IdeaFeedback
+  ) => {
+    await SupabaseService.submitEvaluation(projectId, 'judge-demo', score, comments, decision);
+
+    setSubmissions((prev) =>
+      prev.map((sub) => {
+        if (sub.id !== projectId) return sub;
+        const updated: IdeaSubmission = {
+          ...sub,
+          status: decision,
+          feedback: decision === 'not_selected' ? (feedback || sub.feedback) : undefined,
+        };
+        if (sub.id === activeSubmission.id) {
+          setActiveSubmission(updated);
+        }
+        return updated;
+      })
+    );
+
+    setNotifications((prev) => [
+      {
+        id: `notif-${Date.now()}`,
+        title: decision === 'selected' ? '🏆 Finalist Selection Confirmed' : '📝 Project Evaluation Complete',
+        message: `Evaluation recorded with score ${score}/100. Status updated to ${decision === 'selected' ? 'Selected' : 'Reviewed'}.`,
+        type: 'feedback',
+        timeAgo: 'Just now',
+        isRead: false,
+        linkAction: 'idea-review',
+      },
+      ...prev,
+    ]);
+  };
+
   // Faculty broadcasts an opportunity
   const handleBroadcastSuccess = () => {
     setNotifications((prev) => [
@@ -208,10 +282,15 @@ export default function App() {
     ]);
   };
 
-  // Host new hackathon
-  const handleCreateHackathon = (newHack: Hackathon) => {
+  // Host new hackathon (persisted to Supabase)
+  const handleCreateHackathon = async (newHack: Hackathon) => {
     setHackathons((prev) => [newHack, ...prev]);
     setSelectedHackathon(newHack);
+    try {
+      await SupabaseService.createHackathon(newHack);
+    } catch (e) {
+      console.warn('Supabase hackathon save caught:', e);
+    }
     setNotifications((prev) => [
       {
         id: `notif-${Date.now()}`,
@@ -245,7 +324,7 @@ export default function App() {
 
   // Find user submission for current selected hackathon
   const userSubmissionForSelected = submissions.find(
-    (s) => s.hackathonId === selectedHackathon.id && s.leadEmail === 'alwinsiby207@gmail.com'
+    (s) => s.hackathonId === selectedHackathon.id && s.leadEmail === 'abcd@gmail.com'
   );
 
   return (
@@ -268,22 +347,23 @@ export default function App() {
           currentView === 'hackathon-details'
             ? 'Hackathon Details'
             : currentView === 'idea-review'
-            ? 'My Feedback'
-            : currentView === 'my-hacks'
-            ? 'My Applications'
-            : currentView === 'projects'
-            ? 'Projects'
-            : currentView === 'alerts'
-            ? 'Alerts'
-            : currentView === 'profile'
-            ? 'Profile'
-            : 'Explore'
+              ? 'My Feedback'
+              : currentView === 'my-hacks'
+                ? 'My Applications'
+                : currentView === 'projects'
+                  ? 'Projects'
+                  : currentView === 'alerts'
+                    ? 'Alerts'
+                    : currentView === 'profile'
+                      ? 'Profile'
+                      : 'Explore'
         }
         activeRole={activeRole}
         onToggleRole={handleRoleChangeRequest}
         unreadCount={unreadAlertsCount}
         onOpenStudentDashboard={() => setIsStudentDashboardOpen(true)}
         onOpenOrganizerDesk={() => setIsOrganizerOpen(true)}
+        onOpenJudgePortal={() => setIsJudgeOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -355,6 +435,7 @@ export default function App() {
             onOpenHostModal={() => setIsHostOpen(true)}
             onOpenFacultyPortal={() => setIsFacultyShareOpen(true)}
             onOpenStudentDashboard={() => setIsStudentDashboardOpen(true)}
+            onOpenJudgePortal={() => setIsJudgeOpen(true)}
           />
         )}
       </main>
@@ -367,7 +448,7 @@ export default function App() {
         hasFeedbackReady={submissions.some((s) => s.status === 'not_selected')}
       />
 
-      {/* 1. INITIAL ENTRY WELCOME: Role Gate Modal (Student / Faculty ID / Organizer ID) */}
+      {/* 1. INITIAL ENTRY WELCOME: Role Gate Modal (Student / Faculty ID / Organizer ID / Judge ID) */}
       <RoleAuthModal
         isOpen={isWelcomePromptOpen}
         mode="initial_welcome"
@@ -375,11 +456,12 @@ export default function App() {
           setActiveRole(role);
           setIsWelcomePromptOpen(false);
           if (role === 'organizer') setIsOrganizerOpen(true);
+          if (role === 'judge') setIsJudgeOpen(true);
           if (role === 'faculty') setIsFacultyShareOpen(true);
         }}
       />
 
-      {/* 2. IN-APP ROLE SWITCH: Verification Modal (asks for Organizer ID or Faculty ID) */}
+      {/* 2. IN-APP ROLE SWITCH: Verification Modal (asks for Organizer, Judge, or Faculty ID) */}
       <RoleAuthModal
         isOpen={Boolean(switchAuthTarget)}
         mode="verify_switch"
@@ -388,6 +470,7 @@ export default function App() {
           setActiveRole(role);
           setSwitchAuthTarget(null);
           if (role === 'organizer') setIsOrganizerOpen(true);
+          if (role === 'judge') setIsJudgeOpen(true);
           if (role === 'faculty') setIsFacultyShareOpen(true);
         }}
         onCancel={() => setSwitchAuthTarget(null)}
@@ -422,6 +505,21 @@ export default function App() {
             setActiveRole('student');
           }}
           onUpdateStatus={handleOrganizerUpdateStatus}
+        />
+      )}
+
+      {/* Judge Mode: Evaluation & Edge AI Portal */}
+      {isJudgeOpen && (
+        <JudgeModal
+          submissions={submissions}
+          onClose={() => {
+            setIsJudgeOpen(false);
+            setActiveRole('student');
+          }}
+          onTriggerAiAnalysis={async (sub) => {
+            return await SupabaseService.runProjectAnalysis(sub);
+          }}
+          onSubmitEvaluation={handleJudgeEvaluation}
         />
       )}
 

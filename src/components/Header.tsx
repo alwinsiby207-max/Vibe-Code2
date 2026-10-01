@@ -13,6 +13,7 @@ interface HeaderProps {
   unreadCount: number;
   onOpenStudentDashboard?: () => void;
   onOpenOrganizerDesk?: () => void;
+  onOpenJudgePortal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -26,6 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
   unreadCount,
   onOpenStudentDashboard,
   onOpenOrganizerDesk,
+  onOpenJudgePortal,
 }) => {
   return (
     <header className="sticky top-0 w-full z-40 bg-[#fff9ef]/95 backdrop-blur-md border-b border-[#d5c3b6]/40 transition-all">
@@ -74,16 +76,6 @@ export const Header: React.FC<HeaderProps> = ({
             Student
           </button>
           <button
-            onClick={() => onToggleRole('faculty')}
-            className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
-              activeRole === 'faculty'
-                ? 'bg-[#ffffff] text-[#8b5a2b] shadow-xs font-bold'
-                : 'hover:text-[#1d1b16]'
-            }`}
-          >
-            Faculty 🎓
-          </button>
-          <button
             onClick={() => onToggleRole('organizer')}
             className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
               activeRole === 'organizer'
@@ -92,6 +84,26 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             Organizer ⚙️
+          </button>
+          <button
+            onClick={() => onToggleRole('judge')}
+            className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+              activeRole === 'judge'
+                ? 'bg-[#ffffff] text-[#8b5a2b] shadow-xs font-bold'
+                : 'hover:text-[#1d1b16]'
+            }`}
+          >
+            Judge ⚖️
+          </button>
+          <button
+            onClick={() => onToggleRole('faculty')}
+            className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+              activeRole === 'faculty'
+                ? 'bg-[#ffffff] text-[#8b5a2b] shadow-xs font-bold'
+                : 'hover:text-[#1d1b16]'
+            }`}
+          >
+            Faculty 🎓
           </button>
         </div>
 
@@ -118,7 +130,21 @@ export const Header: React.FC<HeaderProps> = ({
               title="Open Evaluation & Selected Team List"
             >
               <span className="material-symbols-outlined text-[16px]">how_to_reg</span>
-              <span>Selection Desk</span>
+              <span className="hidden sm:inline">Organizer Desk</span>
+              <span className="sm:hidden">Desk</span>
+            </button>
+          )}
+
+          {/* JUDGE MODE: Portal Button */}
+          {activeRole === 'judge' && onOpenJudgePortal && (
+            <button
+              onClick={onOpenJudgePortal}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#8b5a2b] hover:bg-[#70451f] text-white text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+              title="Open Judge Scoring & AI Evaluation Desk"
+            >
+              <span className="material-symbols-outlined text-[16px]">gavel</span>
+              <span className="hidden sm:inline">Judge Desk</span>
+              <span className="sm:hidden">Judge</span>
             </button>
           )}
 

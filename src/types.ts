@@ -1,4 +1,21 @@
-export type Role = 'student' | 'faculty' | 'organizer';
+export type Role = 'student' | 'faculty' | 'organizer' | 'judge';
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  avatarUrl?: string;
+}
+
+export interface JudgeEvaluation {
+  id: string;
+  projectId: string;
+  judgeId: string;
+  comments: string;
+  totalScore: number;
+  createdAt: string;
+}
 
 export interface Hackathon {
   id: string;

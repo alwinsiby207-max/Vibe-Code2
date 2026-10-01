@@ -13,8 +13,8 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
   onSubmit,
 }) => {
   const [teamName, setTeamName] = useState('Team Nova');
-  const [leadName, setLeadName] = useState('Alwin Siby');
-  const [leadEmail, setLeadEmail] = useState('alwinsiby207@gmail.com');
+  const [leadName, setLeadName] = useState('Alex Jordan');
+  const [leadEmail, setLeadEmail] = useState('alex.jordan@campus.edu');
   const [ideaTitle, setIdeaTitle] = useState('Smart College Canteen');
   const [problemStatement, setProblemStatement] = useState(
     'Students spend 20–30 minutes waiting in cafeteria queues during the lunch break, causing missed meals and rush-hour delays.'
